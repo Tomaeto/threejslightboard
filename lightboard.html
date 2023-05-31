@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html>
+	<style>
+		#buttonset {
+	position: fixed;
+	top: 0;
+	left: 0;
+	}
+	</style>
+	<head>
+		<meta charset="utf-8">
+		<title>Light Board?</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+		<div id="buttonset">
+		<button id="white">White</button>
+		<button id="red">Red</button>
+		<button id="green">Green</button>
+		<button id="blue">Blue</button>
+		<button id="black">Black</button>
+		<button id="input">Input Hex</button>
+		</div>
+		<script type="module">
+			//Statically importing three.js module from website
+			//Allows for use of script if three.js is not installed on machine
+			import * as THREE from 'https://unpkg.com/three/build/three.module.js';
+
+			//Creating enum of colors and hex values for buttons
+			const colors = {
+				"white": 0xffffff,
+				"red": 	 0xff0000,
+				"green": 0x00ff00,
+				"blue":  0x0000ff,
+				"black": 0x000000
+			};
+
+			//Creating scene, camera, and renderer
+			const scene = new THREE.Scene();
+			const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+			const renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+			
+			//Adding light source to scene
+			{
+			const color = 0xFFFFFF;
+  			const intensity = 1;
+ 			const light = new THREE.DirectionalLight(color, intensity);
+ 			light.position.set(-1,2,4);
+ 			scene.add(light);
+			}
+
+			//Function for making row of spheres 45 at height y, centered in scene and initialized as black (off)
+			//sets each sphere 1.5 units apart, starting from right (negative) side
+			function makeRow(y) {
+				const row = [];
+				var xpos = -33;
+				for (let i = 0; i < 45; i++) {
+					row[i] = new THREE.Mesh(new THREE.SphereGeometry( 0.5,32,16 ), new THREE.MeshPhongMaterial({color: 0x000000}));
+					scene.add(row[i]);
+					row[i].position.x = xpos;
+					row[i].position.y = y;
+					xpos += 1.5;
+				}
+				return row;
+			}
+
+			//Creating Array of light rows to act as 27x45 light board
+			//Spaces each row 1.5 units apart, starting from right (negative) side
+			var board = new Array(27);
+			var ypos = 19.5;
+			for (let i = 0; i < 27; i++) {
+				board[i] = makeRow(ypos);
+				ypos -=1.5;
+			}
+
+			//Creating backboard and adding to scene behind light spheres
+			const backboard = new THREE.Mesh(new THREE.BoxGeometry(78,47,1), new THREE.MeshPhongMaterial({color: 0x675a5a}));
+			scene.add(backboard);
+			backboard.position.z = -5;
+			camera.position.z = 35;
+			renderer.render( scene, camera );
+
+			//Adding functionality to buttons to change color of all lights on click
+			//Adds event listener to each button to set all lights to color based on button's id, getting hex value from colors enum
+			var buttons = document.getElementsByTagName("button");
+			for (let i = 0; i < buttons.length-1; i++) {
+				buttons[i].addEventListener("click", function(){
+					changecolor(colors[buttons[i].id]);
+				});
+			}	
+
+			//Adding event listener for final button for inputting hex value for color change
+			//Gets hex value from getHex function, then runs changecolor
+			buttons[buttons.length-1].addEventListener("click", function(){
+				changecolor(getHex());
+			});
+
+			//Function for getting user input for hex value for color
+			//Displays alert and repeats prompt until input is in proper format
+			function getHex() {
+				var hex = prompt("Enter hex value for color in the format 0x######", "0xffffff");
+				while (hex.length != 8 || !hex.startsWith("0x") ) {
+					alert("Invalid hex value input!");
+					hex = prompt("Enter hex value for color in the format 0x######", "0xffffff");
+				}
+				return hex;
+			}
+
+			//Function for changing color of all lights using given hex value
+			//Sets color of all lights and rerenders scene
+			function changecolor(hex) {
+				for (let y = 0; y < board.length; y++) {
+					for (let x = 0; x < board[0].length; x++) {
+						board[y][x].material.color.setHex(hex);
+					}
+				}
+				renderer.render(scene,camera);
+			}
+		</script>
+	</body>
+</html>
